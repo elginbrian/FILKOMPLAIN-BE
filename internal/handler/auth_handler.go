@@ -19,6 +19,7 @@ func NewAuthHandler(service *app.AuthService) *AuthHandler {
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	type req struct {
 		Username string `json:"username"`
+		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 	var body req
@@ -28,13 +29,13 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 			Error:   "invalid request",
 		})
 	}
-	if body.Username == "" || body.Password == "" {
+	if body.Username == "" || body.Email == "" || body.Password == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
 			Success: false,
-			Error:   "username and password required",
+			Error:   "username, email, and password required",
 		})
 	}
-	if err := h.Service.Register(body.Username, body.Password); err != nil {
+	if err := h.Service.Register(body.Username, body.Email, body.Password); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
 			Success: false,
 			Error:   err.Error(),
@@ -48,7 +49,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	type req struct {
-		Username string `json:"username"`
+		Email    string `json:"email"` 
 		Password string `json:"password"`
 	}
 	var body req
@@ -58,7 +59,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 			Error:   "invalid request",
 		})
 	}
-	token, err := h.Service.Login(body.Username, body.Password)
+	token, err := h.Service.Login(body.Email, body.Password) 
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(response.Response{
 			Success: false,
@@ -79,13 +80,13 @@ func (h *AuthHandler) RegisterAdmin(c *fiber.Ctx) error {
 			Error:   "invalid request",
 		})
 	}
-	if body.Username == "" || body.Password == "" {
+	if body.Username == "" || body.Email == "" || body.Password == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
 			Success: false,
-			Error:   "username and password required",
+			Error:   "username, email, and password required",
 		})
 	}
-	if err := h.Service.RegisterWithType(body.Username, body.Password, "admin"); err != nil {
+	if err := h.Service.RegisterWithType(body.Username, body.Email, body.Password, "admin"); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
 			Success: false,
 			Error:   err.Error(),
@@ -105,7 +106,7 @@ func (h *AuthHandler) LoginAdmin(c *fiber.Ctx) error {
 			Error:   "invalid request",
 		})
 	}
-	token, err := h.Service.LoginWithType(body.Username, body.Password, "admin")
+	token, err := h.Service.LoginWithType(body.Email, body.Password, "admin") // Changed to use Email
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(response.Response{
 			Success: false,

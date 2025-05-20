@@ -2,21 +2,23 @@ package request
 
 type RegisterRequest struct {
 	Username string `json:"username"`
+	Email    string `json:"email"` // Added email field
 	Password string `json:"password"`
 }
 
 type LoginRequest struct {
-	Username string `json:"username"`
+	Email    string `json:"email"` // Changed from Username to Email
 	Password string `json:"password"`
 }
 
 type AdminRegisterRequest struct {
 	Username string `json:"username"`
+	Email    string `json:"email"` // Added email field
 	Password string `json:"password"`
 }
 
 type AdminLoginRequest struct {
-	Username string `json:"username"`
+	Email    string `json:"email"` // Changed from Username to Email
 	Password string `json:"password"`
 }
 

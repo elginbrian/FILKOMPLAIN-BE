@@ -19,34 +19,48 @@ func NewAuthService(repo repository.AuthRepository) *AuthService {
 	return &AuthService{Repo: repo}
 }
 
-func (s *AuthService) Register(username, password string) error {
+func (s *AuthService) Register(username, email, password string) error {
 	_, err := s.Repo.GetByUsername(username)
 	if err == nil {
 		return errors.New("username already exists")
 	}
+	
+	_, err = s.Repo.GetByEmail(email)
+	if err == nil {
+		return errors.New("email already exists")
+	}
+	
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return errors.New("could not hash password")
 	}
 	user := &model.User{
 		Username: username,
+		Email:    email,
 		Password: string(hash),
-		Type:     "user", // default type
+		Type:     "user",
 	}
 	return s.Repo.Create(user)
 }
 
-func (s *AuthService) RegisterWithType(username, password, userType string) error {
+func (s *AuthService) RegisterWithType(username, email, password, userType string) error {
 	_, err := s.Repo.GetByUsername(username)
 	if err == nil {
 		return errors.New("username already exists")
 	}
+	
+	_, err = s.Repo.GetByEmail(email)
+	if err == nil {
+		return errors.New("email already exists")
+	}
+	
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return errors.New("could not hash password")
 	}
 	user := &model.User{
 		Username: username,
+		Email:    email,
 		Password: string(hash),
 		Type:     userType,
 	}
@@ -75,8 +89,8 @@ func (s *AuthService) GenerateTokenForUser(user *model.User) (string, error) {
 	return signed, nil
 }
 
-func (s *AuthService) Login(username, password string) (string, error) {
-	user, err := s.Repo.GetByUsername(username)
+func (s *AuthService) Login(email, password string) (string, error) {
+	user, err := s.Repo.GetByEmail(email)
 	if err != nil {
 		return "", errors.New("invalid credentials")
 	}
@@ -87,8 +101,8 @@ func (s *AuthService) Login(username, password string) (string, error) {
 	return s.GenerateTokenForUser(user)
 }
 
-func (s *AuthService) LoginWithType(username, password, userType string) (string, error) {
-	user, err := s.Repo.GetByUsername(username)
+func (s *AuthService) LoginWithType(email, password, userType string) (string, error) {
+	user, err := s.Repo.GetByEmail(email)
 	if err != nil || user.Type != userType {
 		return "", errors.New("invalid credentials")
 	}

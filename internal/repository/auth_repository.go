@@ -7,6 +7,7 @@ import (
 
 type AuthRepository interface {
 	GetByUsername(username string) (*model.User, error)
+	GetByEmail(email string) (*model.User, error) // Added method to get user by email
 	Create(user *model.User) error
 	Update(user *model.User) error
 }
@@ -22,6 +23,14 @@ func NewAuthRepository(db *gorm.DB) AuthRepository {
 func (r *authRepository) GetByUsername(username string) (*model.User, error) {
 	var user model.User
 	if err := r.DB.Where("username = ?", username).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *authRepository) GetByEmail(email string) (*model.User, error) {
+	var user model.User
+	if err := r.DB.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
