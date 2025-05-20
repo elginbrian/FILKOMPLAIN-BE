@@ -2,35 +2,32 @@ version: "3.8"
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${DOCKER_USERNAME}/filkomplain:${IMAGE_TAG:-latest}
+    container_name: filkomplain_api_${ENV:-development}
     ports:
-      - "3000:3000"
+      - "${APP_PORT:-3000}:3000"
     depends_on:
       - postgres
     environment:
-      - DATABASE_DSN=host=postgres user=postgres password=postgres dbname=filkomplain port=5432 sslmode=disable
-      - JWT_SECRET=${JWT_SECRET:-defaultsecret123!}
+      - DATABASE_DSN=host=postgres user=postgres password=${DB_PASSWORD:-postgres} dbname=${DB_NAME:-filkomplain} port=5432 sslmode=disable
+      - JWT_SECRET=${JWT_SECRET}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
       - SUPABASE_BUCKET=${SUPABASE_BUCKET}
-    networks:
-      - app-network
+      - GO_ENV=${ENV:-development}
     restart: unless-stopped
 
   postgres:
     image: postgres:16-alpine
+    container_name: filkomplain_postgres_${ENV:-development}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres_data_${ENV:-development}:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=filkomplain
-    networks:
-      - app-network
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-filkomplain}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -38,9 +35,6 @@ services:
       retries: 5
     restart: unless-stopped
 
-networks:
-  app-network:
-    driver: bridge
-
 volumes:
-  postgres-data:
+  postgres_data_development:
+  postgres_data_production:

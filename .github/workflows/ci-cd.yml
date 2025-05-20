@@ -1,0 +1,155 @@
+name: FILKOMPLAIN CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.6
+
+      - name: Install dependencies and run tests
+        run: |
+          go mod tidy
+          go test ./...
+
+  docker:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+    env:
+      BRANCH: ${{ github.ref_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        run: |
+          echo "Building image for branch: $BRANCH"
+          case "$BRANCH" in
+            "main")
+              echo "Building production image..."
+              docker build -t ${{ secrets.DOCKER_USERNAME }}/filkomplain:latest -f Dockerfile .
+              docker push ${{ secrets.DOCKER_USERNAME }}/filkomplain:latest
+              ;;
+            "dev")
+              echo "Building development image..."
+              docker build -t ${{ secrets.DOCKER_USERNAME }}/filkomplain:dev -f Dockerfile .
+              docker push ${{ secrets.DOCKER_USERNAME }}/filkomplain:dev
+              ;;
+            *)
+              echo "Branch not recognized, skipping Docker build."
+              ;;
+          esac
+
+  deploy:
+    needs: docker
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
+    env:
+      BRANCH: ${{ github.ref_name }}
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            set -e
+            trap 'echo "An error occurred. Exiting..." && exit 1' ERR
+
+            BRANCH_FULL="${{ github.ref }}"
+            BRANCH=$(basename "$BRANCH_FULL")
+            if [ -z "$BRANCH" ]; then
+              echo "Branch name is empty. Deploying development environment."
+              BRANCH="dev"
+            fi
+
+            echo "Deploying branch: $BRANCH"
+
+            # Export common environment variables
+            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+            export SUPABASE_KEY="${{ secrets.SUPABASE_KEY }}"
+            export SUPABASE_BUCKET="${{ secrets.SUPABASE_BUCKET }}"
+
+            # Set environment-specific variables
+            if [ "$BRANCH" = "main" ]; then
+              REPO_DIR="github/FILKOMPLAIN-BE"
+              APP_PORT=3000
+              DB_PORT=5432
+              IMAGE_TAG="latest"
+              DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+              ENV="production"
+            else
+              REPO_DIR="github/FILKOMPLAIN-BE"
+              APP_PORT=3001
+              DB_PORT=5433
+              IMAGE_TAG="dev"
+              DB_PASSWORD="postgres"
+              ENV="development"
+            fi
+
+            # Navigate to the repository directory
+            cd $REPO_DIR || { echo "Directory $REPO_DIR not found."; exit 1; }
+
+            # Update repository
+            git reset --hard
+            git clean -fd
+            git pull
+            go mod tidy
+            go mod vendor
+            docker image prune -f
+
+            echo "Deploying ${BRANCH} environment using docker-compose.yml..."
+            if [ ! -f docker-compose.yml ]; then
+              echo "docker-compose.yml not found in $(pwd). Exiting."
+              exit 1
+            fi
+
+            docker-compose down -v
+
+            if [ "$BRANCH" != "main" ]; then
+              echo "Resetting development database..."
+              docker-compose up -d postgres
+              echo "Waiting for postgres to start..."
+              sleep 10
+              docker-compose exec -T postgres psql -U postgres -c "DROP DATABASE IF EXISTS filkomplain_${ENV};"
+              docker-compose exec -T postgres psql -U postgres -c "CREATE DATABASE filkomplain_${ENV};"
+              docker-compose down
+            fi
+
+            export DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
+            export APP_PORT=$APP_PORT
+            export DB_PORT=$DB_PORT
+            export IMAGE_TAG=$IMAGE_TAG
+            export DB_PASSWORD=$DB_PASSWORD
+            export ENV=$ENV
+            export DB_NAME="filkomplain_${ENV}"
+
+            docker-compose build
+            docker-compose up -d
+
+            echo "Deployment completed successfully."
