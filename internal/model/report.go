@@ -10,5 +10,5 @@ type Report struct {
 	PhoneNumber string `json:"phone_number"`
 	Status      string `json:"status"`
 	Attachment  string `json:"attachment"`
-	Reply       string `json:"reply"` // admin reply
+	Reply       string `json:"reply"` 
 }

@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	cors "github.com/gofiber/fiber/v2/middleware/cors"
+
 	"github.com/joho/godotenv"
 
 	"github.com/elginbrian/FILKOMPLAIN-BE/config"
@@ -47,6 +49,14 @@ func main() {
 	handler.SetupSystemInfo(db)
 
 	app := fiber.New()
+	
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:3000, https://filkomplain-fe.vercel.app",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+		AllowCredentials: true,
+	}))
+
 	routes.RegisterRoutes(app, jwtSecret, authHandler, userHandler, reportHandler)
 
 	log.Fatal(app.Listen(":3000"))
