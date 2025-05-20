@@ -14,10 +14,10 @@ WORKDIR /app
 RUN apk --no-cache add ca-certificates
 
 COPY --from=builder /app/main .
-COPY --from=builder /app/.env .
 
 RUN adduser -D appuser
 USER appuser
 
 EXPOSE 3000
+
 CMD ["./main"]

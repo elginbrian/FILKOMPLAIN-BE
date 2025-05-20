@@ -2,6 +2,9 @@ version: "3.8"
 
 services:
   app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: ${DOCKER_USERNAME}/filkomplain:${IMAGE_TAG:-latest}
     container_name: filkomplain_api_${ENV:-development}
     ports:
@@ -15,6 +18,8 @@ services:
       - SUPABASE_KEY=${SUPABASE_KEY}
       - SUPABASE_BUCKET=${SUPABASE_BUCKET}
       - GO_ENV=${ENV:-development}
+    env_file:
+      - .env
     restart: unless-stopped
 
   postgres:
