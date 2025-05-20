@@ -89,12 +89,6 @@ jobs:
 
             echo "Deploying branch: $BRANCH"
 
-            # Export common environment variables
-            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
-            export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
-            export SUPABASE_KEY="${{ secrets.SUPABASE_KEY }}"
-            export SUPABASE_BUCKET="${{ secrets.SUPABASE_BUCKET }}"
-
             # Set environment-specific variables
             if [ "$BRANCH" = "main" ]; then
               REPO_DIR="github/FILKOMPLAIN-BE"
@@ -119,28 +113,17 @@ jobs:
             git reset --hard
             git clean -fd
             git pull
-            go mod tidy
-            go mod vendor
-            docker image prune -f
 
-            echo "Deploying ${BRANCH} environment using docker-compose.yml..."
-            if [ ! -f docker-compose.yml ]; then
-              echo "docker-compose.yml not found in $(pwd). Exiting."
-              exit 1
-            fi
+            # Create a minimal .env file
+            echo "Creating .env file..."
+            cat > .env << EOF
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
+            SUPABASE_BUCKET=${{ secrets.SUPABASE_BUCKET }}
+            EOF
 
-            docker-compose down -v
-
-            if [ "$BRANCH" != "main" ]; then
-              echo "Resetting development database..."
-              docker-compose up -d postgres
-              echo "Waiting for postgres to start..."
-              sleep 10
-              docker-compose exec -T postgres psql -U postgres -c "DROP DATABASE IF EXISTS filkomplain_${ENV};"
-              docker-compose exec -T postgres psql -U postgres -c "CREATE DATABASE filkomplain_${ENV};"
-              docker-compose down
-            fi
-
+            # Set environment variables for docker-compose
             export DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             export APP_PORT=$APP_PORT
             export DB_PORT=$DB_PORT
@@ -148,7 +131,28 @@ jobs:
             export DB_PASSWORD=$DB_PASSWORD
             export ENV=$ENV
             export DB_NAME="filkomplain_${ENV}"
+            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+            export SUPABASE_KEY="${{ secrets.SUPABASE_KEY }}"
+            export SUPABASE_BUCKET="${{ secrets.SUPABASE_BUCKET }}"
 
+            echo "Env vars set. DOCKER_USERNAME=${DOCKER_USERNAME}"
+
+            # First stop and remove containers
+            docker-compose down -v || true
+
+            # If in dev mode, reset the database
+            if [ "$BRANCH" != "main" ]; then
+              echo "Resetting development database..."
+              docker-compose up -d postgres
+              echo "Waiting for postgres to start..."
+              sleep 10
+              docker-compose exec -T postgres psql -U postgres -c "DROP DATABASE IF EXISTS filkomplain_${ENV};" || true
+              docker-compose exec -T postgres psql -U postgres -c "CREATE DATABASE filkomplain_${ENV};" || true
+              docker-compose down || true
+            fi
+
+            # Build and start containers
             docker-compose build
             docker-compose up -d
 

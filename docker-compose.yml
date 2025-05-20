@@ -19,7 +19,7 @@ services:
       - SUPABASE_BUCKET=${SUPABASE_BUCKET}
       - GO_ENV=${ENV:-development}
     env_file:
-      - .env
+      - ${ENV_FILE:-.env}
     restart: unless-stopped
 
   postgres:
