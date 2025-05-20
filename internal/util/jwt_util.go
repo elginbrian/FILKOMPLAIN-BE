@@ -23,20 +23,31 @@ func ExtractUser(c *fiber.Ctx) (*UserClaims, bool) {
 	
 	var userClaims UserClaims
 	
-	if username, exists := claims["username"].(string); exists {
-		userClaims.Username = username
-	} else {
+	username, exists := claims["username"]
+	if !exists {
 		return nil, false
 	}
+	usernameStr, ok := username.(string)
+	if !ok || usernameStr == "" {
+		return nil, false
+	}
+	userClaims.Username = usernameStr
 	
-	if userType, exists := claims["type"].(string); exists {
-		userClaims.Type = userType
+	userType, exists := claims["type"]
+	if exists {
+		if typeStr, ok := userType.(string); ok {
+			userClaims.Type = typeStr
+		} else {
+			userClaims.Type = "user" 
+		}
 	} else {
-		userClaims.Type = "user"
+		userClaims.Type = "user" 
 	}
 	
-	if userID, exists := claims["user_id"].(float64); exists {
-		userClaims.UserID = uint(userID)
+	if userID, exists := claims["user_id"]; exists {
+		if idFloat, ok := userID.(float64); ok {
+			userClaims.UserID = uint(idFloat)
+		}
 	}
 	
 	return &userClaims, true
@@ -56,4 +67,12 @@ func GetUsernameFromJWT(c *fiber.Ctx) string {
 		return ""
 	}
 	return user.Username
+}
+
+func GetUserIDFromJWT(c *fiber.Ctx) uint {
+	user, ok := ExtractUser(c)
+	if !ok {
+		return 0
+	}
+	return user.UserID
 }

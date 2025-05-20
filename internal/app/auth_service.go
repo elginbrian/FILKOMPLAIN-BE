@@ -53,6 +53,28 @@ func (s *AuthService) RegisterWithType(username, password, userType string) erro
 	return s.Repo.Create(user)
 }
 
+func (s *AuthService) GenerateTokenForUser(user *model.User) (string, error) {
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		return "", errors.New("JWT_SECRET not configured")
+	}
+	
+	claims := jwt.MapClaims{
+		"username": user.Username,
+		"type":     user.Type,
+		"user_id":  user.ID,
+		"exp":      time.Now().Add(time.Hour * 72).Unix(),
+	}
+	
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		return "", errors.New("could not generate token")
+	}
+	
+	return signed, nil
+}
+
 func (s *AuthService) Login(username, password string) (string, error) {
 	user, err := s.Repo.GetByUsername(username)
 	if err != nil {
@@ -61,19 +83,8 @@ func (s *AuthService) Login(username, password string) (string, error) {
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return "", errors.New("invalid credentials")
 	}
-	jwtSecret := os.Getenv("JWT_SECRET")
-	claims := jwt.MapClaims{
-		"username": user.Username,
-		"type":     user.Type, // Add user type to regular login tokens
-		"user_id":  user.ID,   // Also add user ID for easier reference
-		"exp":      time.Now().Add(time.Hour * 72).Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := token.SignedString([]byte(jwtSecret))
-	if err != nil {
-		return "", errors.New("could not login")
-	}
-	return signed, nil
+	
+	return s.GenerateTokenForUser(user)
 }
 
 func (s *AuthService) LoginWithType(username, password, userType string) (string, error) {
@@ -84,18 +95,8 @@ func (s *AuthService) LoginWithType(username, password, userType string) (string
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return "", errors.New("invalid credentials")
 	}
-	jwtSecret := os.Getenv("JWT_SECRET")
-	claims := jwt.MapClaims{
-		"username": user.Username,
-		"type":     user.Type,
-		"exp":      time.Now().Add(time.Hour * 72).Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := token.SignedString([]byte(jwtSecret))
-	if err != nil {
-		return "", errors.New("could not login")
-	}
-	return signed, nil
+	
+	return s.GenerateTokenForUser(user)
 }
 
 func (s *AuthService) GetProfile(username string) (*model.User, error) {

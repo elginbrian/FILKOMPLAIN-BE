@@ -23,6 +23,7 @@ func RegisterRoutes(
 	apiV1.Post("/admin/login", authHandler.LoginAdmin)
 
 	protected := apiV1.Group("/", middleware.JWTProtected(jwtSecret))
+	protected.Post("/refresh-token", authHandler.RefreshToken)
 
 	protected.Get("/profile", userHandler.GetProfile)
 	protected.Put("/profile", userHandler.UpdateProfile)

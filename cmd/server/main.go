@@ -18,6 +18,10 @@ import (
 func main() {
 	_ = godotenv.Load()
 	jwtSecret := os.Getenv("JWT_SECRET")
+	
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is not set")
+	}
 
 	db, err := config.ConnectDatabase()
 	if err != nil {

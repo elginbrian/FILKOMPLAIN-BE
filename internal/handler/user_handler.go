@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/elginbrian/FILKOMPLAIN-BE/internal/app"
+	"github.com/elginbrian/FILKOMPLAIN-BE/internal/util"
 	"github.com/elginbrian/FILKOMPLAIN-BE/pkg/response"
 	"github.com/gofiber/fiber/v2"
 )
@@ -15,7 +16,7 @@ func NewUserHandler(service *app.UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
-	username := getUsernameFromJWT(c)
+	username := util.GetUsernameFromJWT(c)
 	if username == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(response.Response{
 			Success: false,
@@ -39,7 +40,7 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 }
 
 func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
-	username := getUsernameFromJWT(c)
+	username := util.GetUsernameFromJWT(c)
 	if username == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(response.Response{
 			Success: false,
@@ -66,18 +67,4 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 		Success: true,
 		Message: "profile updated",
 	})
-}
-
-// Helper to extract username from JWT claims
-func getUsernameFromJWT(c *fiber.Ctx) string {
-	user := c.Locals("user")
-	if user == nil {
-		return ""
-	}
-	claims, ok := user.(map[string]interface{})
-	if !ok {
-		return ""
-	}
-	username, _ := claims["username"].(string)
-	return username
 }

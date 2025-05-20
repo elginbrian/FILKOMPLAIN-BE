@@ -178,3 +178,34 @@ func (h *AuthHandler) UpdateProfile(c *fiber.Ctx) error {
 		Message: "profile updated",
 	})
 }
+
+func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
+	username := util.GetUsernameFromJWT(c)
+	if username == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(response.Response{
+			Success: false,
+			Error:   "unauthorized",
+		})
+	}
+	
+	user, err := h.Service.GetProfile(username)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(response.Response{
+			Success: false,
+			Error:   "user not found",
+		})
+	}
+	
+	token, err := h.Service.GenerateTokenForUser(user)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(response.Response{
+			Success: false,
+			Error:   "could not refresh token",
+		})
+	}
+	
+	return c.JSON(response.Response{
+		Success: true,
+		Data:    response.LoginData{Token: token},
+	})
+}
