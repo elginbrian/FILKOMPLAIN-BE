@@ -47,3 +47,10 @@ type ResolveReportStatusRequest struct {
 type ReplyReportRequest struct {
 	Reply string `json:"reply"`
 }
+
+type UpdateProfileRequest struct {
+	Password     string `json:"password,omitempty"`
+	NIM          string `json:"nim,omitempty"`
+	ProgramStudi string `json:"program_studi,omitempty"`
+	PhoneNumber  string `json:"phone_number,omitempty"`
+}

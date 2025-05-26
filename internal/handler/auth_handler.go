@@ -120,14 +120,14 @@ func (h *AuthHandler) LoginAdmin(c *fiber.Ctx) error {
 }
 
 func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
-	userName := util.GetUsernameFromJWT(c)
-	if userName == "" {
+	userID := util.GetUserIDFromJWT(c)
+	if userID == 0 {
 		return c.Status(fiber.StatusUnauthorized).JSON(response.Response{
 			Success: false,
 			Error:   "unauthorized",
 		})
 	}
-	user, err := h.Service.GetProfile(userName)
+	user, err := h.Service.GetProfileByID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(response.Response{
 			Success: false,
@@ -137,43 +137,48 @@ func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
 	return c.JSON(response.Response{
 		Success: true,
 		Data: fiber.Map{
-			"id":       user.ID,
-			"username": user.Username,
-			"type":     user.Type,
+			"id":            user.ID,
+			"username":      user.Username,
+			"email":         user.Email,
+			"type":          user.Type,
+			"nim":           user.NIM,
+			"program_studi": user.ProgramStudi,
+			"phone_number":  user.PhoneNumber,
 		},
 	})
 }
 
 func (h *AuthHandler) UpdateProfile(c *fiber.Ctx) error {
-	userName := util.GetUsernameFromJWT(c)
-	if userName == "" {
+	userID := util.GetUserIDFromJWT(c)
+	if userID == 0 {
 		return c.Status(fiber.StatusUnauthorized).JSON(response.Response{
 			Success: false,
 			Error:   "unauthorized",
 		})
 	}
-	type req struct {
-		Password string `json:"password,omitempty"`
-	}
-	var body req
+	
+	var body request.UpdateProfileRequest
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
 			Success: false,
 			Error:   "invalid request",
 		})
 	}
+	
 	if body.Password == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
 			Success: false,
 			Error:   "password required",
 		})
 	}
-	if err := h.Service.UpdateProfile(userName, body.Password); err != nil {
+	
+	if err := h.Service.UpdateProfileFull(userID, body.Password, body.NIM, body.ProgramStudi, body.PhoneNumber); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(response.Response{
 			Success: false,
 			Error:   err.Error(),
 		})
 	}
+	
 	return c.JSON(response.Response{
 		Success: true,
 		Message: "profile updated",
