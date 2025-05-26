@@ -134,10 +134,19 @@ func (s *AuthService) UpdateProfile(username, newPassword string) error {
 	return s.Repo.Update(user)
 }
 
-func (s *AuthService) UpdateProfileFull(userID uint, newPassword, nim, programStudi, phoneNumber string) error {
+func (s *AuthService) UpdateProfileFull(userID uint, newPassword, username, nim, programStudi, phoneNumber string) error {
 	user, err := s.Repo.GetByID(userID)
 	if err != nil {
 		return err
+	}
+	
+	if username != "" && username != user.Username {
+		// Check if username is already taken
+		existingUser, err := s.Repo.GetByUsername(username)
+		if err == nil && existingUser.ID != userID {
+			return errors.New("username already exists")
+		}
+		user.Username = username
 	}
 	
 	// Update password if provided

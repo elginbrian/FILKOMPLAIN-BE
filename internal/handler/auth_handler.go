@@ -137,13 +137,14 @@ func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
 	return c.JSON(response.Response{
 		Success: true,
 		Data: fiber.Map{
-			"id":            user.ID,
-			"username":      user.Username,
-			"email":         user.Email,
-			"type":          user.Type,
-			"nim":           user.NIM,
-			"program_studi": user.ProgramStudi,
-			"phone_number":  user.PhoneNumber,
+			"id":               user.ID,
+			"username":         user.Username,
+			"email":            user.Email,
+			"type":             user.Type,
+			"nim":              user.NIM,
+			"program_studi":    user.ProgramStudi,
+			"phone_number":     user.PhoneNumber,
+			"profile_image_url": user.ProfileImageURL,
 		},
 	})
 }
@@ -172,7 +173,7 @@ func (h *AuthHandler) UpdateProfile(c *fiber.Ctx) error {
 		})
 	}
 	
-	if err := h.Service.UpdateProfileFull(userID, body.Password, body.NIM, body.ProgramStudi, body.PhoneNumber); err != nil {
+	if err := h.Service.UpdateProfileFull(userID, body.Password, body.Username, body.NIM, body.ProgramStudi, body.PhoneNumber); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(response.Response{
 			Success: false,
 			Error:   err.Error(),

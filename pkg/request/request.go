@@ -49,6 +49,7 @@ type ReplyReportRequest struct {
 }
 
 type UpdateProfileRequest struct {
+	Username     string `json:"username,omitempty"`
 	Password     string `json:"password,omitempty"`
 	NIM          string `json:"nim,omitempty"`
 	ProgramStudi string `json:"program_studi,omitempty"`
