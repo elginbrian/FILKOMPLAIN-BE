@@ -25,25 +25,12 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 		})
 	}
 
-	// First try getting by ID
 	user, err := h.Service.GetProfileByID(userID)
 	if err != nil {
-		// Fallback to username
-		username := util.GetUsernameFromJWT(c)
-		if username == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(response.Response{
-				Success: false,
-				Error:   "unauthorized",
-			})
-		}
-
-		user, err = h.Service.GetProfile(username)
-		if err != nil {
-			return c.Status(fiber.StatusNotFound).JSON(response.Response{
-				Success: false,
-				Error:   "user not found",
-			})
-		}
+		return c.Status(fiber.StatusNotFound).JSON(response.Response{
+			Success: false,
+			Error:   "user not found",
+		})
 	}
 
 	return c.JSON(response.Response{

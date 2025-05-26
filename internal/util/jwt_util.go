@@ -2,6 +2,7 @@ package util
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 type UserClaims struct {
@@ -16,37 +17,109 @@ func ExtractUser(c *fiber.Ctx) (*UserClaims, bool) {
 		return nil, false
 	}
 	
-	claims, ok := user.(map[string]interface{})
-	if !ok {
-		return nil, false
+	// Try to extract from JWT token object first
+	if token, ok := user.(*jwt.Token); ok {
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if ok {
+			return extractFromClaims(claims)
+		}
 	}
 	
+	// Fall back to map extraction
+	claims, ok := user.(jwt.MapClaims)
+	if ok {
+		return extractFromClaims(claims)
+	}
+	
+	// Last resort - try as a regular map
+	claimsMap, ok := user.(map[string]interface{})
+	if ok {
+		return extractFromMap(claimsMap)
+	}
+	
+	return nil, false
+}
+
+func extractFromClaims(claims jwt.MapClaims) (*UserClaims, bool) {
 	var userClaims UserClaims
 	
-	username, exists := claims["username"]
-	if !exists {
+	// Extract username
+	if username, exists := claims["username"]; exists {
+		if usernameStr, ok := username.(string); ok && usernameStr != "" {
+			userClaims.Username = usernameStr
+		} else {
+			return nil, false
+		}
+	} else {
 		return nil, false
 	}
-	usernameStr, ok := username.(string)
-	if !ok || usernameStr == "" {
-		return nil, false
-	}
-	userClaims.Username = usernameStr
 	
-	userType, exists := claims["type"]
-	if exists {
+	// Extract type
+	if userType, exists := claims["type"]; exists {
 		if typeStr, ok := userType.(string); ok {
 			userClaims.Type = typeStr
 		} else {
-			userClaims.Type = "user" 
+			userClaims.Type = "user"
 		}
 	} else {
-		userClaims.Type = "user" 
+		userClaims.Type = "user"
 	}
 	
+	// Extract user_id
 	if userID, exists := claims["user_id"]; exists {
-		if idFloat, ok := userID.(float64); ok {
-			userClaims.UserID = uint(idFloat)
+		switch v := userID.(type) {
+		case float64:
+			userClaims.UserID = uint(v)
+		case int:
+			userClaims.UserID = uint(v)
+		case uint:
+			userClaims.UserID = v
+		default:
+			// If we can't extract user_id properly, return false
+			return nil, false
+		}
+	}
+	
+	return &userClaims, true
+}
+
+func extractFromMap(claims map[string]interface{}) (*UserClaims, bool) {
+	var userClaims UserClaims
+	
+	// Extract username
+	if username, exists := claims["username"]; exists {
+		if usernameStr, ok := username.(string); ok && usernameStr != "" {
+			userClaims.Username = usernameStr
+		} else {
+			return nil, false
+		}
+	} else {
+		return nil, false
+	}
+	
+	// Extract type
+	if userType, exists := claims["type"]; exists {
+		if typeStr, ok := userType.(string); ok {
+			userClaims.Type = typeStr
+		} else {
+			userClaims.Type = "user"
+		}
+	} else {
+		userClaims.Type = "user"
+	}
+	
+	// Extract user_id
+	if userID, exists := claims["user_id"]; exists {
+		switch v := userID.(type) {
+		case float64:
+			userClaims.UserID = uint(v)
+		case int:
+			userClaims.UserID = uint(v)
+		case uint:
+			userClaims.UserID = v
+		default:
+			// If we can't extract user_id properly, return false
+			return nil, false
 		}
 	}
 	

@@ -10,6 +10,8 @@ func JWTProtected(secret string) fiber.Handler {
 		SigningKey:   []byte(secret),
 		ContextKey:   "user",
 		ErrorHandler: jwtError,
+		TokenLookup:  "header:Authorization",
+		AuthScheme:   "Bearer",
 	})
 }
 
