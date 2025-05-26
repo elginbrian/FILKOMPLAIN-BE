@@ -23,11 +23,13 @@ func toReportData(r *model.Report) response.ReportData {
 	return response.ReportData{
 		ID:          r.ID,
 		UserName:    r.UserName,
+		Title:       r.Title,
 		Content:     r.Content,
 		Place:       r.Place,
 		PhoneNumber: r.PhoneNumber,
 		Status:      r.Status,
 		Attachment:  r.Attachment,
+		Reply:       r.Reply,
 		CreatedAt:   r.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   r.UpdatedAt.Format(time.RFC3339),
 	}
@@ -82,6 +84,28 @@ func (h *ReportHandler) CreateReport(c *fiber.Ctx) error {
 			})
 		}
 		
+		// Validate required fields
+		if report.UserName == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+				Success: false,
+				Error:   "user_name is required",
+			})
+		}
+		
+		if report.PhoneNumber == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+				Success: false,
+				Error:   "phone_number is required",
+			})
+		}
+		
+		if report.Title == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+				Success: false,
+				Error:   "title is required",
+			})
+		}
+		
 		if files := form.File["attachment"]; len(files) > 0 {
 			file := files[0] 
 			
@@ -115,6 +139,28 @@ func (h *ReportHandler) CreateReport(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
 			Success: false,
 			Error:   err.Error(),
+		})
+	}
+	
+	// Validate required fields for non-multipart requests
+	if report.UserName == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+			Success: false,
+			Error:   "user_name is required",
+		})
+	}
+	
+	if report.PhoneNumber == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+			Success: false,
+			Error:   "phone_number is required",
+		})
+	}
+	
+	if report.Title == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+			Success: false,
+			Error:   "title is required",
 		})
 	}
 	

@@ -24,6 +24,7 @@ type AdminLoginRequest struct {
 
 type CreateReportRequest struct {
 	UserName    string `json:"user_name"`
+	Title       string `json:"title"`
 	Content     string `json:"content"`
 	Place       string `json:"place"`
 	PhoneNumber string `json:"phone_number"`
@@ -33,6 +34,7 @@ type CreateReportRequest struct {
 
 type UpdateReportRequest struct {
 	UserName    string `json:"user_name"`
+	Title       string `json:"title"`
 	Content     string `json:"content"`
 	Place       string `json:"place"`
 	PhoneNumber string `json:"phone_number"`

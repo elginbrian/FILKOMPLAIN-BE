@@ -14,11 +14,13 @@ type LoginData struct {
 type ReportData struct {
 	ID          uint   `json:"id"`
 	UserName    string `json:"user_name"`
+	Title       string `json:"title"`
 	Content     string `json:"content"`
 	Place       string `json:"place"`
 	PhoneNumber string `json:"phone_number"`
 	Status      string `json:"status"`
 	Attachment  string `json:"attachment"`
+	Reply       string `json:"reply,omitempty"`
 	CreatedAt   string `json:"created_at,omitempty"`
 	UpdatedAt   string `json:"updated_at,omitempty"`
 }

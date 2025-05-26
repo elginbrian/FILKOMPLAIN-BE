@@ -5,6 +5,7 @@ import "gorm.io/gorm"
 type Report struct {
 	gorm.Model
 	UserName    string `json:"user_name"`
+	Title       string `json:"title"`
 	Content     string `json:"content"`
 	Place       string `json:"place"`
 	PhoneNumber string `json:"phone_number"`
