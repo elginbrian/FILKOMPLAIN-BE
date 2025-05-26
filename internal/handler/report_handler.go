@@ -75,107 +75,112 @@ func (h *ReportHandler) GetReport(c *fiber.Ctx) error {
 }
 
 func (h *ReportHandler) CreateReport(c *fiber.Ctx) error {
-	if form, err := c.MultipartForm(); err == nil {
-		var report model.Report
-		if err := c.BodyParser(&report); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(response.Response{
-				Success: false,
-				Error:   err.Error(),
-			})
-		}
-		
-		// Validate required fields
-		if report.UserName == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(response.Response{
-				Success: false,
-				Error:   "user_name is required",
-			})
-		}
-		
-		if report.PhoneNumber == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(response.Response{
-				Success: false,
-				Error:   "phone_number is required",
-			})
-		}
-		
-		if report.Title == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(response.Response{
-				Success: false,
-				Error:   "title is required",
-			})
-		}
-		
-		if files := form.File["attachment"]; len(files) > 0 {
-			file := files[0] 
-			
-			attachmentURL, err := h.Service.UploadAttachment(file)
-			if err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(response.Response{
-					Success: false,
-					Error:   "Failed to upload attachment: " + err.Error(),
-				})
-			}
-			
-			report.Attachment = attachmentURL
-		}
-		
-		if err := h.Service.CreateReport(&report); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(response.Response{
-				Success: false,
-				Error:   err.Error(),
-			})
-		}
-		
-		return c.Status(fiber.StatusCreated).JSON(response.Response{
-			Success: true,
-			Message: "report created",
-			Data:    toReportData(&report),
-		})
-	}
-	
-	var report model.Report
-	if err := c.BodyParser(&report); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
-			Success: false,
-			Error:   err.Error(),
-		})
-	}
-	
-	// Validate required fields for non-multipart requests
-	if report.UserName == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
-			Success: false,
-			Error:   "user_name is required",
-		})
-	}
-	
-	if report.PhoneNumber == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
-			Success: false,
-			Error:   "phone_number is required",
-		})
-	}
-	
-	if report.Title == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(response.Response{
-			Success: false,
-			Error:   "title is required",
-		})
-	}
-	
-	if err := h.Service.CreateReport(&report); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(response.Response{
-			Success: false,
-			Error:   err.Error(),
-		})
-	}
-	
-	return c.Status(fiber.StatusCreated).JSON(response.Response{
-		Success: true,
-		Message: "report created",
-		Data:    toReportData(&report),
-	})
+    if form, err := c.MultipartForm(); err == nil {
+        var report model.Report
+
+        if len(form.Value["user_name"]) > 0 {
+            report.UserName = form.Value["user_name"][0]
+        }
+        if len(form.Value["title"]) > 0 {
+            report.Title = form.Value["title"][0]
+        }
+        if len(form.Value["content"]) > 0 {
+            report.Content = form.Value["content"][0]
+        }
+        if len(form.Value["place"]) > 0 {
+            report.Place = form.Value["place"][0]
+        }
+        if len(form.Value["phone_number"]) > 0 {
+            report.PhoneNumber = form.Value["phone_number"][0]
+        }
+        if len(form.Value["status"]) > 0 {
+            report.Status = form.Value["status"][0]
+        }
+
+        if report.UserName == "" {
+            return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+                Success: false,
+                Error:   "user_name is required",
+            })
+        }
+        if report.PhoneNumber == "" {
+             return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+                Success: false,
+                Error:   "phone_number is required",
+            })
+        }
+        if report.Title == "" {
+            return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+                Success: false,
+                Error:   "title is required",
+            })
+        }
+     
+        if files := form.File["attachment"]; len(files) > 0 {
+            file := files[0]
+            attachmentURL, err := h.Service.UploadAttachment(file) 
+            if err != nil {
+                return c.Status(fiber.StatusInternalServerError).JSON(response.Response{
+                    Success: false,
+                    Error:   "Failed to upload attachment: " + err.Error(),
+                })
+            }
+            report.Attachment = attachmentURL
+        }
+        
+        if err := h.Service.CreateReport(&report); err != nil {
+            return c.Status(fiber.StatusInternalServerError).JSON(response.Response{
+                Success: false,
+                Error:   err.Error(),
+            })
+        }
+        
+        return c.Status(fiber.StatusCreated).JSON(response.Response{
+            Success: true,
+            Message: "report created",
+            Data:    toReportData(&report),
+        })
+    }
+    
+    var report model.Report
+    if err := c.BodyParser(&report); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+            Success: false,
+            Error:   err.Error(),
+        })
+    }
+    
+    if report.UserName == "" {
+        return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+            Success: false,
+            Error:   "user_name is required",
+        })
+    }
+    if report.PhoneNumber == "" {
+        return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+            Success: false,
+            Error:   "phone_number is required",
+        })
+    }
+    if report.Title == "" {
+        return c.Status(fiber.StatusBadRequest).JSON(response.Response{
+            Success: false,
+            Error:   "title is required",
+        })
+    }
+    
+    if err := h.Service.CreateReport(&report); err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(response.Response{
+            Success: false,
+            Error:   err.Error(),
+        })
+    }
+    
+    return c.Status(fiber.StatusCreated).JSON(response.Response{
+        Success: true,
+        Message: "report created",
+        Data:    toReportData(&report),
+    })
 }
 
 func (h *ReportHandler) UpdateReport(c *fiber.Ctx) error {
